@@ -5,80 +5,78 @@
 #include <stdio.h>
 #include <math.h>  
 
+typedef struct {
 
-/**
- * @file pctdemo_processMandelbrotElement.cu
- *
- * CUDA code to calculate the Mandelbrot Set on a GPU.
- *
- * Copyright 2011 The MathWorks, Inc.
- */
+    int width;
+    int height;
+    int stride;
+    float* elements;
 
- /** Work out which piece of the global array this thread should operate on */
-__device__ size_t calculateGlobalIndex() {
-	// Which block are we?
-	size_t const globalBlockIndex = blockIdx.x + blockIdx.y * gridDim.x;
-	// Which thread are we within the block?
-	size_t const localThreadIdx = threadIdx.x + blockDim.x * threadIdx.y;
-	// How big is each block?
-	size_t const threadsPerBlock = blockDim.x*blockDim.y;
-	// Which thread are we overall?
-	return localThreadIdx + globalBlockIndex * threadsPerBlock;
+    } Matrix;
 
-}
 
-/** The actual Mandelbrot algorithm for a single location */
-__device__ unsigned int doIterations(double const realPart0,
-	double const imagPart0,
-	unsigned int const maxIters) {
-	// Initialise: z = z0
-	double realPart = realPart0;
-	double imagPart = imagPart0;
-	unsigned int count = 0;
-	// Loop until escape
-	while ((count <= maxIters)
-		&& ((realPart*realPart + imagPart * imagPart) <= 4.0)) {
-		++count;
-		// Update: z = z*z + z0;
-		double const oldRealPart = realPart;
-		realPart = realPart * realPart - imagPart * imagPart + realPart0;
-		imagPart = 2.0*oldRealPart*imagPart + imagPart0;
+__global__ void bordes( const int *A, const int *B, const  int filas, const int columnas, int LongVector )
+{
+	// Reserva de memoria
+	int ** matriz = new int*[filas];
+	for (int a = 0; a < filas; a++)
+	{
+		matriz[a] = new int[columnas];
 	}
-	return count;
-}
-
-
-/** Main entry point.
- * Works out where the current thread should read/write to global memory
- * and calls doIterations to do the actual work.
- */
-__global__ void processMandelbrotElement(
-	double * out,
-	const double * x,
-	const double * y,
-	const unsigned int maxIters,
-	const unsigned int numel) {
-	// Work out which thread we are
-	size_t const globalThreadIdx = calculateGlobalIndex();
-
-	// If we're off the end, return now
-	if (globalThreadIdx >= numel) {
-		return;
+	// ingreso de valores
+	int contador = 0;
+	for (int a = 0; a < filas; a++)
+	{
+		for (int b = 0; b < columnas; b++)
+		{
+			contador = contador + 1;
+			matriz[a][b] = A[contador];
+		}
 	}
 
-	// Get our X and Y coords
-	double const realPart0 = x[globalThreadIdx];
-	double const imagPart0 = y[globalThreadIdx];
+	// Liberación de la memoria
+	/*for (int i = 0; i < filas; i++)
+	{
+		delete[] matriz[i];
+	}
 
-	// Run the itearations on this location
-	unsigned int const count = doIterations(realPart0, imagPart0, maxIters);
-	out[globalThreadIdx] = log(double(count + 1));
+	delete[] matriz;*/
+
+
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	int j = blockIdx.y * blockDim.y + threadIdx.y;
+
+	int blockRow = blockIdx.y; 
+	int blockCol = blockIdx.x;
+
 }
 
+/*__global__ void MatMulKernel(Matrix A, Matrix B, Matrix C)
+{
+	int blockRow = blockIdx.y; int blockCol = blockIdx.x;
+	Matrix Csub = GetSubMatrix(C, blockRow, blockCol);
+	float Cvalue = 0; // Variable para guardar resultado
+	int row = threadIdx.y; int col = threadIdx.x;
+	//Bucle para multiplicar submatrices Asubi y Bsubi
+	for (int m = 0; m < (A.width / BLOCK_SIZE); ++m) {
+
+		Matrix Asub = GetSubMatrix(A, blockRow, m); // Obten Asub de A
+		Matrix Bsub = GetSubMatrix(B, m, blockCol); // Obten Bsub de B
+		// Declara y carga variables en memoria compartida
+		__shared__ float As[BLOCK_SIZE][BLOCK_SIZE];
+		__shared__ float Bs[BLOCK_SIZE][BLOCK_SIZE];
+		As[row][col] = GetElement(Asub, row, col);
+		Bs[row][col] = GetElement(Bsub, row, col);
+		__syncthreads(); // Sincroniza para asegurar carga
+		// Multiplica Asubi y Bsubi para actualizar Cvalue
+		for (int e = 0; e < BLOCK_SIZE; ++e)
+			Cvalue += As[row][e] * Bs[e][col];
+		__syncthreads(); // Sincroniza para asegurar fin cómputo previo }
+		SetElement(Csub, row, col, Cvalue); // Escribe Csub a memoria global
+	}*/
 
 int main()
 {
 	return 0;
 }
-
 
