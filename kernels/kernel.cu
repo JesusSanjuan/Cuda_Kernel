@@ -5,78 +5,86 @@
 #include <stdio.h>
 #include <math.h>  
 
-typedef struct {
+__device__ unsigned int computeOutputEdge(int mask[][3], int vecinos[][3], int rows, int cols) {
 
-    int width;
-    int height;
-    int stride;
-    float* elements;
+	float result = 1;
+	int sum = 0;
 
-    } Matrix;
-
-
-__global__ void bordes( const int *A, const int *B, const  int filas, const int columnas, int LongVector )
-{
-	// Reserva de memoria
-	int ** matriz = new int*[filas];
-	for (int a = 0; a < filas; a++)
-	{
-		matriz[a] = new int[columnas];
-	}
-	// ingreso de valores
-	int contador = 0;
-	for (int a = 0; a < filas; a++)
-	{
-		for (int b = 0; b < columnas; b++)
-		{
-			contador = contador + 1;
-			matriz[a][b] = A[contador];
+	for (int i = 0; i < rows; i++) {
+		for (int j = 0; j < cols; j++) {
+			float mul = mask[i][j] * vecinos[i][j];
+			sum = sum + mul;
 		}
 	}
-
-	// Liberación de la memoria
-	/*for (int i = 0; i < filas; i++)
-	{
-		delete[] matriz[i];
-	}
-
-	delete[] matriz;*/
-
-
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	int j = blockIdx.y * blockDim.y + threadIdx.y;
-
-	int blockRow = blockIdx.y; 
-	int blockCol = blockIdx.x;
-
+	result = abs(sum);
+	return (int)result;
 }
 
-/*__global__ void MatMulKernel(Matrix A, Matrix B, Matrix C)
+
+
+__global__ void bordes(float* val2, float* val1, int m, int n)
 {
-	int blockRow = blockIdx.y; int blockCol = blockIdx.x;
-	Matrix Csub = GetSubMatrix(C, blockRow, blockCol);
-	float Cvalue = 0; // Variable para guardar resultado
-	int row = threadIdx.y; int col = threadIdx.x;
-	//Bucle para multiplicar submatrices Asubi y Bsubi
-	for (int m = 0; m < (A.width / BLOCK_SIZE); ++m) {
 
-		Matrix Asub = GetSubMatrix(A, blockRow, m); // Obten Asub de A
-		Matrix Bsub = GetSubMatrix(B, m, blockCol); // Obten Bsub de B
-		// Declara y carga variables en memoria compartida
-		__shared__ float As[BLOCK_SIZE][BLOCK_SIZE];
-		__shared__ float Bs[BLOCK_SIZE][BLOCK_SIZE];
-		As[row][col] = GetElement(Asub, row, col);
-		Bs[row][col] = GetElement(Bsub, row, col);
-		__syncthreads(); // Sincroniza para asegurar carga
-		// Multiplica Asubi y Bsubi para actualizar Cvalue
-		for (int e = 0; e < BLOCK_SIZE; ++e)
-			Cvalue += As[row][e] * Bs[e][col];
-		__syncthreads(); // Sincroniza para asegurar fin cómputo previo }
-		SetElement(Csub, row, col, Cvalue); // Escribe Csub a memoria global
-	}*/
+	int column = threadIdx.x + blockDim.x * blockIdx.x;
+	int row = threadIdx.y + blockDim.y * blockIdx.y;
 
+
+
+
+	int myEdge[3][3] = { {0,1,0},{1,-4,1},{0,1,0} };
+	//int filas = (sizeof(myMask)/sizeof(myMask[0]));
+
+	if (row < m && column < n) {
+
+		int thread_id1 = (row - 1) * n + (column - 1);
+		int thread_id2 = (row - 1) * n + (column);
+		int thread_id3 = (row - 1) * n + (column + 1);
+
+		int thread_id4 = (row)* n + (column - 1);
+
+		int thread_id5 = (row)* n + (column);
+
+		int thread_id6 = (row)* n + (column + 1);
+
+		int thread_id7 = (row + 1) * n + (column - 1);
+		int thread_id8 = (row + 1) * n + (column);
+		int thread_id9 = (row + 1) * n + (column + 1);
+
+
+		int my_val = val1[thread_id5];
+
+		printf("row: %d, col: %d, value: %d\n", row, column, my_val);
+
+		val2[thread_id5] = val1[thread_id5];
+
+		if ((row > 0 && row < (m - 1)) && (column > 0 && column < (n - 1)))
+		{
+			int my_val0 = val1[thread_id1];
+			int my_val2 = val1[thread_id2];
+			int my_val3 = val1[thread_id3];
+			int my_val4 = val1[thread_id4];
+			int my_val5 = val1[thread_id5]; //doubly-subscripted access
+			int my_val6 = val1[thread_id6];
+			int my_val7 = val1[thread_id7];
+			int my_val8 = val1[thread_id8];
+			int my_val9 = val1[thread_id9];
+			//printf("row: %d, col: %d, value: %d\n", row, column, my_val);
+
+			int myMask2[3][3] = { {(my_val0),(my_val2),(my_val3)},
+								 {(my_val4),(my_val5),(my_val6)},
+								 {(my_val7),(my_val8),(my_val9)} };
+
+			unsigned int output = computeOutputEdge(myEdge, myMask2, 3, 3);
+			printf("output: %d", output);
+
+			val2[thread_id5] = output;
+
+
+
+		}
+	}
+}
 int main()
 {
 	return 0;
 }
-
