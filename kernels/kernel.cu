@@ -52,7 +52,6 @@ __global__ void bordes(int* val2, int* val1, int m, int n)
 		int thread_id8 = (row + 1) * n + (column);
 		int thread_id9 = (row + 1) * n + (column + 1);
 
-
 		int my_val = val1[thread_id5];
 
 		//printf("row: %d, \tcol: %d, \tvalor: %d\n", row, column, my_val);
@@ -81,10 +80,6 @@ __global__ void bordes(int* val2, int* val1, int m, int n)
 			//printf("Salida: %d \n", output);
 			//printf("Entro\n");
 			val2[thread_id5] = output;
-		}
-		else
-		{
-			//printf("No entro\n");
 		}
 	}
 }
