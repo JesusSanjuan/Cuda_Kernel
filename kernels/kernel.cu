@@ -5,7 +5,10 @@
 #include <stdio.h>
 #include <math.h>  
 #include <stdlib.h>
+#include <string.h>
 
+#define Columnas 10
+#define Filas 10
 cudaError_t addWithCuda(int* c, const int* a, unsigned int size);
 
 
@@ -23,8 +26,6 @@ __device__ unsigned int computeOutputEdge(int mask[][3], int vecinos[][3], int r
 	result = abs(sum);
 	return (int)result;
 }
-
-
 
 __global__ void bordes(int* val2, int* val1, int m, int n)
 {
@@ -54,7 +55,7 @@ __global__ void bordes(int* val2, int* val1, int m, int n)
 
 		int my_val = val1[thread_id5];
 
-		printf("row: %d, col: %d, value: %d\n", row, column, my_val);
+		//printf("row: %d, \tcol: %d, \tvalor: %d\n", row, column, my_val);
 
 		val2[thread_id5] = val1[thread_id5];
 
@@ -76,44 +77,91 @@ __global__ void bordes(int* val2, int* val1, int m, int n)
 								 {(my_val7),(my_val8),(my_val9)} };
 
 			unsigned int output = computeOutputEdge(myEdge, myMask2, 3, 3);
-			printf("output: %d", output);
-
+			//printf("row: %d,\t col: %d,\t Valor Original: %d,\t Nuevo Valor: %d\n", row, column, my_val5,output);
+			//printf("Salida: %d \n", output);
+			//printf("Entro\n");
 			val2[thread_id5] = output;
+		}
+		else
+		{
+			//printf("No entro\n");
 		}
 	}
 }
 
-
-
-/*__global__ void addKernel(int *c, const int *a, const int *b)
-{
-	int i = threadIdx.x;
-	c[i] = a[i] + b[i];
-}*/
-
 int main()
 {
-	const int arraySize = 100;
-	int a[arraySize] = { 0 };
-	int c[arraySize] = { 0 };
+	int a[Columnas * Filas] = { 0 };
+	int c[Columnas * Filas] = { 0 };
 
-
-	for (int i = 0; i < arraySize; i++)
+	for (int i = 0; i < Columnas * Filas; i++)
 	{
 		int num = 1 + rand() % (256 - 1);
 		a[i] = num;
 	}
-	printf("Valor: %d\n", a[0]);
+
+	FILE* ImagenO1 = fopen("ImagenOriginalAntes.txt", "w");
+	int Col = 0;
+	for (int j = 0; j < Columnas * Filas; j++)
+	{
+		fprintf(ImagenO1, "%d\t", a[j]);
+		if (Columnas-1 == Col)
+		{
+			fprintf(ImagenO1, "\n");
+			Col = -1;
+		}
+		Col++;
+	}
+	fclose(ImagenO1);
+
 
 	// Add vectors in parallel.
-	cudaError_t cudaStatus = addWithCuda(c, a, arraySize);
+	cudaError_t cudaStatus = addWithCuda(c, a, Columnas * Filas);
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "addWithCuda failed! Global");
 		return 1;
 	}
 
-	// printf("{1,2,3,4,5} + {10,20,30,40,50} = {%d,%d,%d,%d,%d}\n",c[0], c[1], c[2], c[3], c[4]);
+	/*Imprime Resultados*/
+	FILE* R = fopen("R.txt", "w");
+	
+	for (int i = 0; i < Columnas * Filas; i++)
+	{
+		//printf("\nPosicion: %d\tValor Original: %d\tValor Procesado: %d",i,a[i],c[i]);	
+		fprintf(R, "\nPosicion: %d\tValor Original: %d\tValor Procesado: %d", i, a[i], c[i]);		
+	}
+	fclose(R);
 
+	/*FILE* ImagenO = fopen("ImagenOriginal.txt", "w");
+	Col = 0;
+	for (int j = 0; j < Columnas * Filas; j++)
+	{
+		fprintf(ImagenO, "%d\t", a[j]);
+		if (Columnas - 1 == Col)
+		{
+			fprintf(ImagenO, "\n");
+			Col = -1;
+		}
+		Col++;
+	}
+	fclose(ImagenO);*/
+
+	FILE* Imagen = fopen("ImagenProce.txt", "w");
+	Col = 0;
+	for (int a = 0; a < Columnas*Filas; a++)
+	{
+		fprintf(Imagen, "%d\t", c[a]);
+		if (Columnas - 1 == Col)
+		{
+			fprintf(Imagen, "\n");
+			Col = -1;
+		}
+		Col++;
+	}
+	fclose(Imagen);
+
+	/*Imprime Resultados*/
+	printf("Terminado");
 	 // cudaDeviceReset must be called before exiting in order for profiling and
 	 // tracing tools such as Nsight and Visual Profiler to show complete traces.
 	cudaStatus = cudaDeviceReset();
@@ -159,14 +207,14 @@ cudaError_t addWithCuda(int* c, const int* a, unsigned int size)
 		goto Error;
 	}
 
-
+	const dim3 gridSize = dim3(Columnas, 1);
+	const dim3 gridThread = dim3(Columnas, Columnas,1);
 	// Launch a kernel on the GPU with one thread for each element.
-	//addKernel<<<1, size>>>(dev_c, dev_a, dev_b);
-	bordes << <1, size >> > (dev_c, dev_a, 10, 10);
+	bordes << <gridSize, gridThread >> > (dev_c, dev_a, Columnas, Filas);
 	// Check for any errors launching the kernel
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
+		fprintf(stderr, "\naddKernel launch failed AQUI: %s\n", cudaGetErrorString(cudaStatus));
 		goto Error;
 	}
 
