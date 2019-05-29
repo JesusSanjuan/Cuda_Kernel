@@ -84,16 +84,17 @@ __global__ void bordes(int* val2, int* val1, int m, int n)
 	}
 }
 
-int main()
+extern "C" int main(int argc, char** argv)
 {
-	int a[Columnas * Filas] = { 0 };
+	//int a[Columnas * Filas] = { 0 };
+	int a[Columnas * Filas] = { 0,	0	,0	,97	,176,	176,	127,	0,0,	0,0	,0,	0	,108,	191,	191	,142,	0,	0,	0,0,	0,	0,	101,	191	,191,	136	,0,	0,	0, 99,	110,	110	,155,	191	,191,	169	,110,	110,	102,182	,191,	191	,191,	191,	191,	191	,191,	191,	189, 180,	191	,191,	191	,191,	191	,191,	191	,191,	187, 120,	134,	133	,165,	191	,191,	176,	133,	134,	124,0,	0,	0,	102,	191,	191	,136,	0,	0,	0,0	,0,	0,	107	,191,	191,	141,	0,	0,	0 ,0,	0	,0,	98	,177,	177,	129	,0	,0,	0 };
 	int c[Columnas * Filas] = { 0 };
 
-	for (int i = 0; i < Columnas * Filas; i++)
+	/*for (int i = 0; i < Columnas * Filas; i++)
 	{
 		int num = 1 + rand() % (256 - 1);
 		a[i] = num;
-	}
+	}*/
 
 	FILE* ImagenO1 = fopen("ImagenOriginalAntes.txt", "w");
 	int Col = 0;
@@ -202,8 +203,8 @@ cudaError_t addWithCuda(int* c, const int* a, unsigned int size)
 		goto Error;
 	}
 
-	const dim3 gridSize = dim3(Columnas, 1);
-	const dim3 gridThread = dim3(Columnas, Columnas,1);
+	const dim3 gridSize = dim3(Columnas*Filas, Columnas*Filas);
+	const dim3 gridThread = dim3(16, 16);
 	// Launch a kernel on the GPU with one thread for each element.
 	bordes << <gridSize, gridThread >> > (dev_c, dev_a, Columnas, Filas);
 	// Check for any errors launching the kernel
