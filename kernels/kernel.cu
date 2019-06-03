@@ -52,7 +52,7 @@ __global__ void bordes(int* val2, int* val1, int m, int n)
 		int thread_id8 = (row + 1) * n + (column);
 		int thread_id9 = (row + 1) * n + (column + 1);
 
-		int my_val = val1[thread_id5];
+		//int my_val = val1[thread_id5];
 
 		//printf("row: %d, \tcol: %d, \tvalor: %d\n", row, column, my_val);
 
@@ -84,24 +84,64 @@ __global__ void bordes(int* val2, int* val1, int m, int n)
 	}
 }
 
-extern "C" int main(int argc, char** argv)
+int main(int argc, char* argv[])
 {
 	//int a[Columnas * Filas] = { 0 };
-	int a[Columnas * Filas] = { 0,	0	,0	,97	,176,	176,	127,	0,0,	0,0	,0,	0	,108,	191,	191	,142,	0,	0,	0,0,	0,	0,	101,	191	,191,	136	,0,	0,	0, 99,	110,	110	,155,	191	,191,	169	,110,	110,	102,182	,191,	191	,191,	191,	191,	191	,191,	191,	189, 180,	191	,191,	191	,191,	191	,191,	191	,191,	187, 120,	134,	133	,165,	191	,191,	176,	133,	134,	124,0,	0,	0,	102,	191,	191	,136,	0,	0,	0,0	,0,	0,	107	,191,	191,	141,	0,	0,	0 ,0,	0	,0,	98	,177,	177,	129	,0	,0,	0 };
-	int c[Columnas * Filas] = { 0 };
+	//int a[Columnas * Filas] = { 0,	0	,0	,97	,176,	176,	127,	0,0,	0,0	,0,	0	,108,	191,	191	,142,	0,	0,	0,0,	0,	0,	101,	191	,191,	136	,0,	0,	0, 99,	110,	110	,155,	191	,191,	169	,110,	110,	102,182	,191,	191	,191,	191,	191,	191	,191,	191,	189, 180,	191	,191,	191	,191,	191	,191,	191	,191,	187, 120,	134,	133	,165,	191	,191,	176,	133,	134,	124,0,	0,	0,	102,	191,	191	,136,	0,	0,	0,0	,0,	0,	107	,191,	191,	141,	0,	0,	0 ,0,	0	,0,	98	,177,	177,	129	,0	,0,	0 };
+	//int c[Columnas * Filas] = { 0 };
 
-	/*for (int i = 0; i < Columnas * Filas; i++)
-	{
-		int num = 1 + rand() % (256 - 1);
-		a[i] = num;
-	}*/
+	if(argc != 2) {
+		printf("Usage: display_Image ImageToLoadandDisplay");
+		return -1;
+	}
+		int m = 0;
+		int n = 0;
+
+		FILE* archivo = fopen(argv[1], "r");
+		char* buffer = NULL;
+		int* array = NULL;
+		int j, c, x;
+
+		array = (int*)realloc(NULL, sizeof(int));
+
+		c = fgetc(archivo);
+		buffer = (char*)realloc(NULL, sizeof(char));
+		j = 0;
+		x = 0;
+		while (!feof(archivo))
+		{
+			if (c == '\t' || c == '\n')
+			{
+				array = (int*)realloc(array, (x + 1) * sizeof(int));
+				array[x] = atoi(buffer);
+				buffer = (char*)realloc(NULL, sizeof(char));
+				j = 0;
+				x++;
+				if (c == '\n')
+				{
+					n++;
+				}
+			}
+			else
+			{
+				buffer[j] = c;
+				j++;
+				buffer = (char*)realloc(buffer, (j + 1) * sizeof(char));
+			}
+			c = fgetc(archivo);
+		}
+		fclose(archivo);
+		m = x / n;   
+		
+    int* prueba= (int*)realloc(NULL, (m*n)*sizeof(int));	
+
 
 	FILE* ImagenO1 = fopen("ImagenOriginalAntes.txt", "w");
 	int Col = 0;
-	for (int j = 0; j < Columnas * Filas; j++)
+	for (int j = 0; j < m *n; j++)
 	{
-		fprintf(ImagenO1, "%d\t", a[j]);
-		if (Columnas-1 == Col)
+		fprintf(ImagenO1, "%d\t", array[j]);
+		if (n-1 == Col)
 		{
 			fprintf(ImagenO1, "\n");
 			Col = -1;
@@ -112,21 +152,21 @@ extern "C" int main(int argc, char** argv)
 
 
 	// Add vectors in parallel.
-	cudaError_t cudaStatus = addWithCuda(c, a, Columnas * Filas);
+	cudaError_t cudaStatus = addWithCuda(prueba, array, Columnas * Filas);
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "addWithCuda failed! Global");
 		return 1;
 	}
 
-	/*Imprime Resultados*/
+	/*Imprime Resultados
 	FILE* R = fopen("R.txt", "w");
 	
 	for (int i = 0; i < Columnas * Filas; i++)
 	{
 		//printf("\nPosicion: %d\tValor Original: %d\tValor Procesado: %d",i,a[i],c[i]);	
-		fprintf(R, "\nPosicion: %d\tValor Original: %d\tValor Procesado: %d", i, a[i], c[i]);		
+		fprintf(R, "\nPosicion: %d\tValor Original: %d\tValor Procesado: %d", i, array[i], prueba[i]);
 	}
-	fclose(R);
+	fclose(R);*/
 
 	/*FILE* ImagenO = fopen("ImagenOriginal.txt", "w");
 	Col = 0;
@@ -146,7 +186,7 @@ extern "C" int main(int argc, char** argv)
 	Col = 0;
 	for (int a = 0; a < Columnas*Filas; a++)
 	{
-		fprintf(Imagen, "%d\t", c[a]);
+		fprintf(Imagen, "%d\t", prueba[a]);
 		if (Columnas - 1 == Col)
 		{
 			fprintf(Imagen, "\n");
